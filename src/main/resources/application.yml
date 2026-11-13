@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: enterprise-kb-assistant
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: qwen2.5:7b
+          temperature: 0.7
+      embedding:
+        model: nomic-embed-text
+
+# 自定义业务配置
+app:
+  knowledge:
+    auto-ingest: true          # 启动时是否自动把 knowledge/*.txt 入库
+    top-k: 4                   # RAG 检索返回的片段数
+    similarity-threshold: 0.55 # 相似度阈值，低于此值不采纳
