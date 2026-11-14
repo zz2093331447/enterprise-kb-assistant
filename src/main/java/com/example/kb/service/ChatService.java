@@ -53,7 +53,7 @@ public class ChatService {
                 .user(message);
 
         //现在加"路由"——在 return 之前，根据意图给 spec 挂不同的能力
-        if(intent.is("knownError")){
+        if(intent.is("KNOWLEDGE")){
             QuestionAnswerAdvisor qsAdvisor=QuestionAnswerAdvisor.builder(vectorStore)
                     .searchRequest(SearchRequest.builder()
                             .topK(topk)

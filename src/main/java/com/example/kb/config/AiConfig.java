@@ -23,3 +23,5 @@ public class AiConfig {
         return SimpleVectorStore.builder(embeddingModel).build();
     }
 }
+
+
