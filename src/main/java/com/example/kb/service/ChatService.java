@@ -2,6 +2,7 @@ package com.example.kb.service;
 
 import com.example.kb.model.QueryIntent;
 import com.example.kb.tools.HrTools;
+import com.example.kb.tools.OrderTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -18,13 +19,15 @@ public class ChatService {
     private final ChatMemory chatMemory;
     private final VectorStore vectorStore;
     private final HrTools hrTools;
+    private final OrderTools orderTools;
     private final int topk;
     private final double similarityThreshold;
-    public ChatService(ChatClient chatClient, ChatMemory chatMemory, VectorStore vectorStore, HrTools hrTools, @Value("${app.knowledge.top-k:4}") int topk, @Value("${app.knowledge.similarity-threshold:0.55}") double similarityThreshold) {
+    public ChatService(ChatClient chatClient, ChatMemory chatMemory, VectorStore vectorStore, HrTools hrTools, OrderTools orderTools, @Value("${app.knowledge.top-k:4}") int topk, @Value("${app.knowledge.similarity-threshold:0.55}") double similarityThreshold) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.vectorStore = vectorStore;
         this.hrTools = hrTools;
+        this.orderTools = orderTools;
         this.topk = topk;
         this.similarityThreshold = similarityThreshold;
     }
@@ -33,9 +36,10 @@ public class ChatService {
         return chatClient.prompt()
                 .user(u->u.text("""
                         请判断下面用户问题的意图类别，并简述理由。
-                        意图只能是以下三者之一：
+                        意图只能是以下四者之一：
                         - KNOWLEDGE：询问公司制度、流程、产品、政策等知识库内容
                         - HR：查询某个员工的人事信息（如工号、部门、年假）
+                        - ORDER：根据订单号查询某个订单的状态、金额、物流等实时订单信息
                         - CHITCHAT：闲聊、问候或无明确业务诉求
                         问题：{question}
                         """).param("question", message))
@@ -63,6 +67,8 @@ public class ChatService {
             spec = spec.advisors(qsAdvisor);
         } else if (intent.is("HR")) {
             spec = spec.tools(hrTools);
+        } else if (intent.is("ORDER")) {
+            spec = spec.tools(orderTools);
         }
 
         return spec.stream().content();
