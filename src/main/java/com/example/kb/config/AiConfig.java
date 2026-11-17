@@ -1,12 +1,8 @@
 package com.example.kb.config;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 
 @Configuration
 public class AiConfig {
@@ -18,10 +14,4 @@ public class AiConfig {
                         + "如果知识库中没有相关内容，请如实说明，不要编造。")
                 .build();
     }
-    @Bean
-    public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-        return SimpleVectorStore.builder(embeddingModel).build();
-    }
 }
-
-

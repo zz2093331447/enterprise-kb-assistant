@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: enterprise-kb-assistant
+
+  datasource:                          # 新增：PostgreSQL 数据源
+    url: jdbc:postgresql://localhost:5432/kbdb
+    username: kbuser
+    password: kbpass
+
   ai:
     ollama:
       base-url: http://localhost:11434
@@ -13,6 +19,13 @@ spring:
           temperature: 0.7
       embedding:
         model: nomic-embed-text
+
+    vectorstore:                       # 新增：PGVector 配置
+      pgvector:
+        initialize-schema: true
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 768                # nomic-embed-text 输出 768 维
 
 # 自定义业务配置
 app:

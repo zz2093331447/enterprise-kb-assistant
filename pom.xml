@@ -53,6 +53,12 @@
             <artifactId>spring-ai-vector-store-advisor</artifactId>
         </dependency>
 
+        <!-- PGVector 向量库 starter：自动装配 PgVectorStore（替换内存版） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
