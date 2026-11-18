@@ -1,18 +1,4 @@
 services:
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    command: serve
-    # 健康检查：让 app 等服务真正"可用"后再启动，而不是只等容器起来
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   pgvector:
     image: pgvector/pgvector:pg16        # 已预装 vector 扩展的 Postgres 16
     environment:
@@ -34,15 +20,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # 容器内不能用 localhost 访问 ollama（那是容器自己），要用 compose 服务名
-      - SPRING_AI_OLLAMA_BASE_URL=http://ollama:11434
+      # 容器内访问宿主机用 host.docker.internal，不是 localhost（那是容器自己）
+      - SPRING_AI_OLLAMA_BASE_URL=http://host.docker.internal:11434
       - SPRING_DATASOURCE_URL=jdbc:postgresql://pgvector:5432/kbdb
+    extra_hosts:                          # 让 Linux 容器也能解析 host.docker.internal
+      - "host.docker.internal:host-gateway"
     depends_on:
-      ollama:
-        condition: service_healthy
-      pgvector:
+      pgvector:                           # 只依赖数据库，ollama 用本机的
         condition: service_healthy
 
 volumes:
-  ollama-data:
   pgdata:

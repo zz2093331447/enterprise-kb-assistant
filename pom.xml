@@ -59,6 +59,26 @@
             <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
         </dependency>
 
+        <!-- 可观测：暴露 health/metrics 端点，Spring AI 的 gen_ai.* 指标靠它可见 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- AOP：Resilience4j 的 @Retry/@CircuitBreaker 注解靠切面实现。
+             注意 Boot 4.x 把 starter-aop 改名为 starter-aspectj（写 aop 会报缺 version） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
+        </dependency>
+
+        <!-- 容错核心：Boot 4.x 专用模块，必须手写 version（Boot 4.1.2 的 BOM 不管它） -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

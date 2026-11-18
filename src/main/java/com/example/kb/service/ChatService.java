@@ -12,45 +12,40 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ChatService {
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
     private final VectorStore vectorStore;
     private final HrTools hrTools;
     private final OrderTools orderTools;
+    private final IntentClassifier intentClassifier;
     private final int topk;
     private final double similarityThreshold;
-    public ChatService(ChatClient chatClient, ChatMemory chatMemory, VectorStore vectorStore, HrTools hrTools, OrderTools orderTools, @Value("${app.knowledge.top-k:4}") int topk, @Value("${app.knowledge.similarity-threshold:0.55}") double similarityThreshold) {
+    public ChatService(ChatClient chatClient, ChatMemory chatMemory,
+                       VectorStore vectorStore, HrTools hrTools,
+                       OrderTools orderTools, IntentClassifier intentClassifier,
+                       @Value("${app.knowledge.top-k:4}") int topk, @Value("${app.knowledge.similarity-threshold:0.55}") double similarityThreshold) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.vectorStore = vectorStore;
         this.hrTools = hrTools;
         this.orderTools = orderTools;
+        this.intentClassifier = intentClassifier;
         this.topk = topk;
         this.similarityThreshold = similarityThreshold;
     }
-    //意图分类
-    public QueryIntent classify(String message){
-        return chatClient.prompt()
-                .user(u->u.text("""
-                        请判断下面用户问题的意图类别，并简述理由。
-                        意图只能是以下四者之一：
-                        - KNOWLEDGE：询问公司制度、流程、产品、政策等知识库内容
-                        - HR：查询某个员工的人事信息（如工号、部门、年假）
-                        - ORDER：根据订单号查询某个订单的状态、金额、物流等实时订单信息
-                        - CHITCHAT：闲聊、问候或无明确业务诉求
-                        问题：{question}
-                        """).param("question", message))
-                .call()
-                .entity(QueryIntent.class);
-    }
+
     //路由 + 记忆 + 流式
 
     public Flux<String> chat(String sessionId, String message){
         MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
-        QueryIntent intent=classify(message);
+        //意图识别方法，根据message返回意图
+        QueryIntent intent=intentClassifier.classify(message);
         var spec=chatClient.prompt()
                 .advisors(a ->a.param(chatMemory.CONVERSATION_ID,sessionId))
                 .advisors(memoryAdvisor)
@@ -71,8 +66,10 @@ public class ChatService {
             spec = spec.tools(orderTools);
         }
 
-        return spec.stream().content();
-
+        return spec.stream().content()
+                .onErrorResume(e -> {
+                    log.warn("对话生成失败，返回兜底话术：{}", e.getMessage());
+                    return Flux.just("抱歉，服务暂时不可用，请稍后再试。");
+                });
     }
-
 }

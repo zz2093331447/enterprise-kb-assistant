@@ -20,6 +20,12 @@ spring:
       embedding:
         model: nomic-embed-text
 
+    chat:                              # 新增：ChatClient 观测（W5a）
+      client:
+        observations:
+          log-prompt: false            # 合规：不把用户原文写进日志/链路
+          log-completion: false        # 同理，回答原文也不记
+
     vectorstore:                       # 新增：PGVector 配置
       pgvector:
         initialize-schema: true
@@ -33,3 +39,45 @@ app:
     auto-ingest: true          # 启动时是否自动把 knowledge/*.txt 入库
     top-k: 4                   # RAG 检索返回的片段数
     similarity-threshold: 0.55 # 相似度阈值，低于此值不采纳
+
+# 可观测（W5a）：端点暴露 + Micrometer 观测
+management:
+  observations:
+    enabled: true                    # 开启观测，生成 gen_ai.* 指标
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics      # 只暴露这两个端点，别用 '*'
+  health:
+    circuitbreakers:
+      enabled: true                  # 熔断健康指示（W5b 用）
+
+# 容错（W5b）：Resilience4j 参数，实例名 intentClassifier 与代码注解对应
+resilience4j:
+  retry:
+    instances:
+      intentClassifier:
+        max-attempts: 3                  # 含首次，共 3 次
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:                # 只对瞬态故障重试，业务异常不重试
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
+  circuitbreaker:
+    instances:
+      intentClassifier:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10          # 看最近 10 次
+        minimum-number-of-calls: 5       # 至少 5 次才开始算失败率
+        failure-rate-threshold: 50       # 失败率 ≥50% 就跳闸
+        wait-duration-in-open-state: 10s # 跳闸后 10 秒进半开
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  ratelimiter:
+    instances:
+      intentClassifier:
+        limit-for-period: 10             # 每 1 分钟最多 10 次
+        limit-refresh-period: 1m
+        timeout-duration: 0              # 超限立即失败（走 fallback），不排队
