@@ -65,6 +65,22 @@ curl -N -X POST http://localhost:8080/api/chat -H 'Content-Type: application/jso
 curl -s http://localhost:8080/actuator/metrics
 ```
 
+### 容器化部署验证
+
+app 与数据库均已容器化，app 通过 `host.docker.internal` 访问宿主机 Ollama，避免重复下载大模型：
+
+```bash
+docker compose up -d --build app pgvector
+```
+
+两个容器正常运行（app + pgvector healthy）：
+
+![Docker 容器运行状态](docs/images/docker-ps.png)
+
+容器里的 app 基于知识库回答问题：
+
+![容器化问答验证](docs/images/docker-chat.png)
+
 ## 项目亮点
 
 1. **完整的 Agent 编排**：意图识别 → 路由 → RAG / 工具 → 记忆 → 流式，不是简单调 API
